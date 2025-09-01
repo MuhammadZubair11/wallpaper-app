@@ -7,6 +7,7 @@ import 'package:wallpaperapp/views/splahscreen.dart';
 
 void main() {
   runApp(
+    // multiprovider learn new
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => WallpaperViewModel()),
