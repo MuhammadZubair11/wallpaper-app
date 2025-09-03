@@ -15,6 +15,7 @@ class WallpaperGrid extends StatefulWidget {
 }
 
 class _WallpaperGridState extends State<WallpaperGrid> {
+  // scroll controller
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -29,7 +30,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
       ).fetchWallpapers(loadMore: false);
     });
 
-    // Infinite scroll listener
+    // Infinite scroll listener bana ga ab
     _scrollController.addListener(() {
       final viewModel = Provider.of<WallpaperViewModel>(context, listen: false);
       if (_scrollController.position.pixels >=
@@ -48,6 +49,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
   }
 
   Widget _buildShimmerTile() {
+    // used kra ga ab shimmer effect jo ka app start hoata hi shades dikaya ga
     return Shimmer.fromColors(
       baseColor: Colors.grey.shade800,
       highlightColor: Colors.grey.shade700,
@@ -62,6 +64,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
 
   @override
   Widget build(BuildContext context) {
+    // ya provide ka consumer ha yani jo wiget ko bs rebuild kra hoga
     return Consumer<WallpaperViewModel>(
       builder: (context, viewModel, child) {
         // Initial loading
@@ -88,7 +91,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
           );
         }
 
-        // Empty state
+        // jab kuch show ni hoga tab
         if (viewModel.wallpapers.isEmpty) {
           return ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -111,6 +114,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
         return Column(
           children: [
             Expanded(
+              // staggeredgrid vew jo ka auto style la la ga
               child: StaggeredGridView.countBuilder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(8),
@@ -120,6 +124,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
                   final wallpaper = viewModel.wallpapers[index];
                   final imageSrc = wallpaper['src'];
                   final imageUrl =
+                      // api jo aya gi os ka src ajsa hoga all a
                       imageSrc['large2x'] ??
                       imageSrc['large'] ??
                       imageSrc['original'] ??
@@ -150,6 +155,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
                         borderRadius: BorderRadius.circular(12),
                         child: AspectRatio(
                           aspectRatio: aspectRatio,
+                          // cached iamge use yani api sa ek abr ark local ma save raha ga
                           child: CachedNetworkImage(
                             imageUrl: imageUrl,
                             fit: BoxFit.cover,
@@ -174,7 +180,7 @@ class _WallpaperGridState extends State<WallpaperGrid> {
               ),
             ),
 
-            // Load More indicator
+            // Load More indicator hoga
             if (viewModel.isLoading && viewModel.wallpapers.isNotEmpty)
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
