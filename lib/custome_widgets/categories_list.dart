@@ -14,6 +14,7 @@ class CategoryList extends StatefulWidget {
 }
 
 class _CategoryListState extends State<CategoryList> {
+  // jo list scroll hogi
   late ScrollController scrollController;
 
   @override
@@ -28,6 +29,7 @@ class _CategoryListState extends State<CategoryList> {
     super.dispose();
   }
 
+  // list scroll
   void _scrollToIndex(int index) {
     final screenWidth = MediaQuery.of(context).size.width;
     // oof set  logic
@@ -71,7 +73,7 @@ class _CategoryListState extends State<CategoryList> {
               child: Chip(
                 label: Text(
                   category,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                   ),

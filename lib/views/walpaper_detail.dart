@@ -9,8 +9,9 @@ import 'package:saver_gallery/saver_gallery.dart';
 import 'package:wallpaper_manager_plus/wallpaper_manager_plus.dart';
 import 'package:http/http.dart' as http;
 import 'package:wallpaperapp/custome_widgets/animated_back.dart';
+import 'package:wallpaperapp/custome_widgets/crop_screen.dart';
 
-class WallpaperDetailScreen extends StatelessWidget {
+class WallpaperDetailScreen extends StatefulWidget {
   final String imageUrl;
   final String heroTag;
 
@@ -20,95 +21,108 @@ class WallpaperDetailScreen extends StatelessWidget {
     required this.heroTag,
   });
 
-  // Wallpaper set function
+  @override
+  State<WallpaperDetailScreen> createState() => _WallpaperDetailScreenState();
+}
+
+class _WallpaperDetailScreenState extends State<WallpaperDetailScreen> {
+  // fire crop iamge
+  File? croppedImageFile;
+  // function crop image
+  Future<void> cropImage(BuildContext context) async {
+    try {
+      final file = await DefaultCacheManager().getSingleFile(widget.imageUrl);
+      final File? result = await Navigator.push<File?>(
+        context,
+        MaterialPageRoute(builder: (_) => CropScreen(imageFile: file)),
+      );
+
+      if (result != null) {
+        setState(() {
+          croppedImageFile = result;
+        });
+        showSnack(context, 'Image cropped successfully!');
+      }
+    } catch (e) {
+      showSnack(context, 'Cropping failed: $e');
+    }
+  }
+
   Future<void> _setWallpaper(BuildContext context) async {
+    File file =
+        croppedImageFile ??
+        await DefaultCacheManager().getSingleFile(widget.imageUrl);
+
     final status = await Permission.storage.request();
     if (!status.isGranted) {
       showSnack(context, 'Storage permission denied');
       return;
     }
 
-    File file;
-    try {
-      file = await DefaultCacheManager().getSingleFile(imageUrl);
-    } catch (e) {
-      showSnack(context, 'Download failed: $e');
-      return;
-    }
-
+    // Show bottom sheet for wallpaper options
     showModalBottomSheet(
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       context: context,
-      builder: (context) => ClipRRect(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        // used container
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-          child: Container(
-            color: Colors.white.withOpacity(0.2),
-            child: SafeArea(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ListTile(
-                    leading: Icon(Icons.home, color: Colors.white),
-                    title: Text(
-                      'Home Screen',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      applyWallpaper(
-                        context,
-                        file.path,
-                        WallpaperManagerPlus.homeScreen,
-                      );
-                    },
-                  ),
-                  const Divider(color: Colors.white24),
-                  ListTile(
-                    leading: Icon(Icons.lock, color: Colors.white),
-                    title: Text(
-                      'Lock Screen',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      applyWallpaper(
-                        context,
-                        file.path,
-                        WallpaperManagerPlus.lockScreen,
-                      );
-                    },
-                  ),
-                  const Divider(color: Colors.white24),
-                  ListTile(
-                    leading: const Icon(
-                      Icons.phone_android,
-                      color: Colors.white,
-                    ),
-                    title: const Text(
-                      'Both Screens',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    onTap: () {
-                      Navigator.pop(context);
-                      applyWallpaper(
-                        context,
-                        file.path,
-                        WallpaperManagerPlus.bothScreens,
-                      );
-                    },
-                  ),
-                ],
-              ),
+      builder: (context) => _buildWallpaperSheet(context, file),
+    );
+  }
+
+  Widget _buildWallpaperSheet(BuildContext context, File file) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          color: Colors.white.withOpacity(0.2),
+          child: SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _wallpaperOption(
+                  context,
+                  file,
+                  'Home Screen',
+                  WallpaperManagerPlus.homeScreen,
+                ),
+                const Divider(color: Colors.white24),
+                _wallpaperOption(
+                  context,
+                  file,
+                  'Lock Screen',
+                  WallpaperManagerPlus.lockScreen,
+                ),
+                const Divider(color: Colors.white24),
+                _wallpaperOption(
+                  context,
+                  file,
+                  'Both Screens',
+                  WallpaperManagerPlus.bothScreens,
+                ),
+              ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  ListTile _wallpaperOption(
+    BuildContext context,
+    File file,
+    String title,
+    int location,
+  ) {
+    return ListTile(
+      leading: const Icon(Icons.wallpaper, color: Colors.white),
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      onTap: () {
+        Navigator.pop(context);
+        applyWallpaper(context, file.path, location);
+        showSnack(context, "Wallpaper set successfully!");
+      },
     );
   }
 
@@ -128,9 +142,7 @@ class WallpaperDetailScreen extends StatelessWidget {
         file,
         location,
       );
-      if (result != null && result.isNotEmpty) {
-        showSnack(context, 'Wallpaper set successfully!');
-      } else {
+      if (result == null || result.isEmpty) {
         showSnack(context, 'Failed to set wallpaper');
       }
     } catch (e) {
@@ -138,7 +150,6 @@ class WallpaperDetailScreen extends StatelessWidget {
     }
   }
 
-  // Save image to gallery
   Future<void> saveImageToGallery(BuildContext context) async {
     bool granted;
     if (Platform.isAndroid) {
@@ -155,7 +166,7 @@ class WallpaperDetailScreen extends StatelessWidget {
     }
 
     try {
-      final response = await http.get(Uri.parse(imageUrl));
+      final response = await http.get(Uri.parse(widget.imageUrl));
       final bytes = Uint8List.fromList(response.bodyBytes);
 
       final result = await SaverGallery.saveImage(
@@ -187,14 +198,12 @@ class WallpaperDetailScreen extends StatelessWidget {
     );
   }
 
-  // ya wiget new banaya ha glassbutton ka jo ka filkter hoga
   Widget glassButton({
     required IconData icon,
     required VoidCallback onTap,
     double size = 50,
   }) {
     return ClipRRect(
-      // filter kr ka
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
         child: InkWell(
@@ -222,26 +231,27 @@ class WallpaperDetailScreen extends StatelessWidget {
         body: Stack(
           children: [
             Hero(
-              tag: heroTag,
+              tag: widget.heroTag,
               child: SizedBox.expand(
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey.shade800,
-                    child: const Icon(
-                      Icons.broken_image,
-                      color: Colors.white54,
-                      size: 40,
-                    ),
-                  ),
-                ),
+                child: croppedImageFile != null
+                    ? Image.file(croppedImageFile!, fit: BoxFit.cover)
+                    : CachedNetworkImage(
+                        imageUrl: widget.imageUrl,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          color: Colors.grey.shade800,
+                          child: const Icon(
+                            Icons.broken_image,
+                            color: Colors.white54,
+                            size: 40,
+                          ),
+                        ),
+                      ),
               ),
             ),
-            // Back button
             Positioned(
               top: 40,
               left: 20,
@@ -250,16 +260,22 @@ class WallpaperDetailScreen extends StatelessWidget {
                 onTap: () => Navigator.pop(context),
               ),
             ),
-            // Download button (top-right)
             Positioned(
               top: 40,
-              right: 20,
+              right: 80, // shifted left to make space for crop button
               child: glassButton(
                 icon: Icons.download,
                 onTap: () => saveImageToGallery(context),
               ),
             ),
-            // Set as Wallpaper button
+            Positioned(
+              top: 40,
+              right: 20,
+              child: glassButton(
+                icon: Icons.crop,
+                onTap: () => cropImage(context),
+              ),
+            ),
             Positioned(
               bottom: 40,
               left: 40,

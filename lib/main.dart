@@ -13,7 +13,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => WallpaperViewModel()),
         ChangeNotifierProvider(create: (_) => ChipSelectionProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(),
     ),
   );
 }

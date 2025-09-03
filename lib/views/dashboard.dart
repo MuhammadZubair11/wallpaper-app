@@ -27,6 +27,7 @@ class _DashboardState extends State<Dashboard> {
     'Cartoon',
     'Auto',
   ];
+
   // jis type ki category ho gi
 
   @override
@@ -59,46 +60,58 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
+    return RefreshIndicator(
+      onRefresh: () async {
+        // Kam se kam 2 second tak indicator show hoga
+        await Future.wait([
+          Provider.of<WallpaperViewModel>(
+            context,
+            listen: false,
+          ).fetchWallpapers(),
+          Future.delayed(Duration(seconds: 2)),
+        ]);
       },
-      child: StarBackground(
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            backgroundColor: Colors.black,
-            title: Text(
-              'Wallpaper App',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: StarBackground(
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: AppBar(
+              backgroundColor: Colors.black,
+              title: Text(
+                'Wallpaper App',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
+              centerTitle: true,
             ),
-            centerTitle: true,
-          ),
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Search Bar
-              CustomSearchBar(
-                controller: searchController,
-                onClear: () {
-                  searchController.clear();
-                  Provider.of<WallpaperViewModel>(
-                    context,
-                    listen: false,
-                  ).fetchWallpapers();
-                },
-                onSearch: onSearch,
-              ),
+            body: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Search Bar
+                CustomSearchBar(
+                  controller: searchController,
+                  onClear: () {
+                    searchController.clear();
+                    Provider.of<WallpaperViewModel>(
+                      context,
+                      listen: false,
+                    ).fetchWallpapers();
+                  },
+                  onSearch: onSearch,
+                ),
 
-              // Categories
-              CategoryList(categories: categories, onTap: onCategory),
+                // Categories
+                CategoryList(categories: categories, onTap: onCategory),
 
-              // Wallpapers Grid
-              Expanded(child: WallpaperGrid()),
-            ],
+                // Wallpapers Grid screen
+                Expanded(child: WallpaperGrid()),
+              ],
+            ),
           ),
         ),
       ),

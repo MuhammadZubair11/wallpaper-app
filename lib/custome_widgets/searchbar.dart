@@ -34,16 +34,16 @@ class _CustomSearchBarState extends State<CustomSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(15),
+      padding: EdgeInsets.all(15),
       child: TextField(
         textInputAction: TextInputAction.search,
         keyboardType: TextInputType.text,
         controller: widget.controller,
         maxLines: 1,
-        style: const TextStyle(color: Colors.white),
+        style: TextStyle(color: Colors.white),
         textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+          contentPadding: EdgeInsets.symmetric(horizontal: 20),
           hintText: "Search wallpaper......... 🙉",
           hintStyle: TextStyle(color: Colors.white70),
           suffixIcon: showClear

@@ -20,23 +20,25 @@ class _WallpaperGridState extends State<WallpaperGrid> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+
+    // Initial fetch
     Future.microtask(() {
       Provider.of<WallpaperViewModel>(
         context,
         listen: false,
       ).fetchWallpapers(loadMore: false);
     });
-  }
 
-  void _onScroll() {
-    final viewModel = Provider.of<WallpaperViewModel>(context, listen: false);
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent - 300 &&
-        !viewModel.isLoading &&
-        viewModel.hasMore) {
-      viewModel.fetchWallpapers(loadMore: true);
-    }
+    // Infinite scroll listener
+    _scrollController.addListener(() {
+      final viewModel = Provider.of<WallpaperViewModel>(context, listen: false);
+      if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 300 &&
+          !viewModel.isLoading &&
+          viewModel.hasMore) {
+        viewModel.fetchWallpapers(loadMore: true);
+      }
+    });
   }
 
   @override
@@ -62,117 +64,125 @@ class _WallpaperGridState extends State<WallpaperGrid> {
   Widget build(BuildContext context) {
     return Consumer<WallpaperViewModel>(
       builder: (context, viewModel, child) {
-        // Loading state
+        // Initial loading
         if (viewModel.isLoading && viewModel.wallpapers.isEmpty) {
-          return StaggeredGridView.countBuilder(
-            padding: EdgeInsets.all(8),
-            crossAxisCount: 2,
-            itemCount: 6,
-            itemBuilder: (context, index) => _buildShimmerTile(),
-            staggeredTileBuilder: (index) => StaggeredTile.fit(1),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 10,
-          );
-        }
-
-        // No wallpapers
-        if (viewModel.wallpapers.isEmpty) {
-          return RefreshIndicator(
-            onRefresh: () async {
-              await viewModel.fetchWallpapers(loadMore: false);
-            },
-            child: ListView(
-              physics: AlwaysScrollableScrollPhysics(),
-              children: [
-                SizedBox(height: MediaQuery.of(context).size.height * 0.35),
-                Center(
-                  child: Text(
-                    viewModel.hasInternet
-                        ? 'No Wallpapers Found!'
-                        : 'Internet Connection Error. Pull to refresh.',
-                    style: const TextStyle(color: Colors.white, fontSize: 18),
-                    textAlign: TextAlign.center,
-                  ),
+          return Stack(
+            children: [
+              StaggeredGridView.countBuilder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(8),
+                crossAxisCount: 2,
+                itemCount: 6,
+                itemBuilder: (context, index) => _buildShimmerTile(),
+                staggeredTileBuilder: (index) => const StaggeredTile.fit(1),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 10,
+              ),
+              const Center(
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 3,
                 ),
-              ],
-            ),
+              ),
+            ],
           );
         }
 
-        // Staggerred
-        // Staggered Grid with RefreshIndicator
-        final itemCount =
-            viewModel.wallpapers.length + (viewModel.hasMore ? 1 : 0);
-        return RefreshIndicator(
-          onRefresh: () async {
-            await viewModel.fetchWallpapers(loadMore: false);
-          },
-          child: StaggeredGridView.countBuilder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(8),
-            crossAxisCount: 2,
-            itemCount: itemCount,
-            itemBuilder: (context, index) {
-              // Shimmer for pagination
-              if (index >= viewModel.wallpapers.length) {
-                return _buildShimmerTile();
-              }
+        // Empty state
+        if (viewModel.wallpapers.isEmpty) {
+          return ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            children: [
+              SizedBox(height: MediaQuery.of(context).size.height * 0.35),
+              Center(
+                child: Text(
+                  viewModel.hasInternet
+                      ? 'No Wallpapers Found!'
+                      : 'Internet Connection Error. Pull to refresh.',
+                  style: const TextStyle(color: Colors.white, fontSize: 18),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ],
+          );
+        }
 
-              final wallpaper = viewModel.wallpapers[index];
-              final imageSrc = wallpaper['src'];
-              final imageUrl =
-                  imageSrc['large2x'] ??
-                  imageSrc['large'] ??
-                  imageSrc['original'] ??
-                  imageSrc['portrait'] ??
-                  imageSrc['landscape'] ??
-                  imageSrc['medium'] ??
-                  imageSrc['tiny'];
+        // Main Grid
+        return Column(
+          children: [
+            Expanded(
+              child: StaggeredGridView.countBuilder(
+                controller: _scrollController,
+                padding: const EdgeInsets.all(8),
+                crossAxisCount: 2,
+                itemCount: viewModel.wallpapers.length,
+                itemBuilder: (context, index) {
+                  final wallpaper = viewModel.wallpapers[index];
+                  final imageSrc = wallpaper['src'];
+                  final imageUrl =
+                      imageSrc['large2x'] ??
+                      imageSrc['large'] ??
+                      imageSrc['original'] ??
+                      imageSrc['portrait'] ??
+                      imageSrc['landscape'] ??
+                      imageSrc['medium'] ??
+                      imageSrc['tiny'];
 
-              final width = wallpaper['width'] ?? 1080;
-              final height = wallpaper['height'] ?? 1920;
-              final aspectRatio = width / height;
+                  final width = wallpaper['width'] ?? 1080;
+                  final height = wallpaper['height'] ?? 1920;
+                  final aspectRatio = width / height;
 
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => WallpaperDetailScreen(
-                        imageUrl: imageUrl,
-                        heroTag: 'wallpaper_$index',
-                      ),
-                    ),
-                  );
-                },
-                child: Hero(
-                  tag: 'wallpaper_$index',
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: AspectRatio(
-                      aspectRatio: aspectRatio,
-                      child: CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.contain,
-                        placeholder: (context, url) => _buildShimmerTile(),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey.shade800,
-                          child: const Icon(
-                            Icons.broken_image,
-                            color: Colors.white54,
-                            size: 40,
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => WallpaperDetailScreen(
+                            imageUrl: imageUrl,
+                            heroTag: 'wallpaper_$index',
+                          ),
+                        ),
+                      );
+                    },
+                    child: Hero(
+                      tag: 'wallpaper_$index',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: AspectRatio(
+                          aspectRatio: aspectRatio,
+                          child: CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => _buildShimmerTile(),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.grey.shade800,
+                              child: const Icon(
+                                Icons.broken_image,
+                                color: Colors.white54,
+                                size: 40,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
+                  );
+                },
+                staggeredTileBuilder: (index) => const StaggeredTile.fit(1),
+                mainAxisSpacing: 12,
+                crossAxisSpacing: 10,
+              ),
+            ),
+
+            // Load More indicator
+            if (viewModel.isLoading && viewModel.wallpapers.isNotEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: CircularProgressIndicator(color: Colors.white),
                 ),
-              );
-            },
-            staggeredTileBuilder: (index) => const StaggeredTile.fit(1),
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 10,
-          ),
+              ),
+          ],
         );
       },
     );

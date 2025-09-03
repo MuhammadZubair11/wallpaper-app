@@ -1,6 +1,7 @@
 import 'package:animated_background/animated_background.dart';
 import 'package:flutter/material.dart';
 
+// Animated Background
 class StarBackground extends StatefulWidget {
   final Widget child;
   const StarBackground({required this.child, Key? key}) : super(key: key);

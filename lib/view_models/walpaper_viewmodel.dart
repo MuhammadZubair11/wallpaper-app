@@ -4,16 +4,16 @@ import 'package:wallpaperapp/services/api_services.dart';
 class WallpaperViewModel extends ChangeNotifier {
   // call api
   final ApiServices apiServices = ApiServices();
-
+  // or data ka model ha sara
+  // pagiantion ka pages ha y
   int page = 1;
   int perPage = 10;
   String currentQuery = 'Any';
-
   List<dynamic> wallpapers = [];
   bool isLoading = false;
   bool hasMore = true;
   bool hasInternet = true;
-
+  // ya function ab bana ga jo ka api ko call kra ga
   Future<void> fetchWallpapers({
     String? query,
     bool loadMore = false,
@@ -21,12 +21,11 @@ class WallpaperViewModel extends ChangeNotifier {
   }) async {
     if (isLoading) return;
 
-    // Update query only if provided
+    // Update query
     if (query != null) {
       currentQuery = query;
     }
 
-    // Reset when refresh or not loading more
     if (refresh || !loadMore) {
       page = 1;
       wallpapers.clear();
@@ -46,7 +45,7 @@ class WallpaperViewModel extends ChangeNotifier {
 
       if (newWallpapers.isNotEmpty) {
         wallpapers.addAll(newWallpapers);
-        page++; // <<< this will now work with correct query
+        page++;
       } else {
         hasMore = false;
       }
