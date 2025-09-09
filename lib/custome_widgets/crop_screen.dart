@@ -3,7 +3,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:crop_image/crop_image.dart';
 import 'package:flutter/material.dart';
-import 'package:wallpaperapp/custome_widgets/animated_back.dart';
+
 
 class CropScreen extends StatefulWidget {
   final File imageFile;

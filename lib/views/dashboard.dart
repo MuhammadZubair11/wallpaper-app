@@ -4,6 +4,7 @@ import 'package:wallpaperapp/custome_widgets/animated_back.dart';
 import 'package:wallpaperapp/custome_widgets/categories_list.dart';
 import 'package:wallpaperapp/custome_widgets/searchbar.dart';
 import 'package:wallpaperapp/custome_widgets/walpapergrid.dart';
+import 'package:wallpaperapp/practice_new.dart/flutter_tables_learn.dart';
 import 'package:wallpaperapp/view_models/walpaper_viewmodel.dart';
 
 class Dashboard extends StatefulWidget {
@@ -77,6 +78,25 @@ class _DashboardState extends State<Dashboard> {
         },
         child: StarBackground(
           child: Scaffold(
+            drawer: Drawer(
+              child: ListView(
+                children: [
+                  DrawerHeader(child: Image.asset("assets/images/logo.png")),
+                  ListTile(
+                    leading: Icon(Icons.edit),
+                    title: Text("Flutter Tables Data "),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => FlutterTables(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
             backgroundColor: Colors.transparent,
             appBar: AppBar(
               backgroundColor: Colors.black,
